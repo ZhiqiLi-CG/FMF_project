@@ -1,0 +1,569 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Functional Mean Flow in Hilbert Space</title>
+    <meta
+      name="description"
+      content="Project page for Functional Mean Flow in Hilbert Space."
+    />
+    <link rel="stylesheet" href="styles.css" />
+    <script>
+      window.MathJax = {
+        tex: { inlineMath: [["\\(", "\\)"], ["$", "$"]] },
+        svg: { fontCache: "global" }
+      };
+    </script>
+    <script
+      defer
+      src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"
+    ></script>
+  </head>
+  <body>
+    <main>
+      <section class="hero">
+        <div class="hero-inner">
+          <h1>Functional Mean Flow in Hilbert Space</h1>
+          <p class="authors">
+            <a href="https://zhiqili-cg.github.io/">Zhiqi Li</a>,
+            <a href="https://yuchen-sun-cg.github.io/">Yuchen Sun</a>,
+            <a href="https://faculty.cc.gatech.edu/~turk/">Greg Turk</a>,
+            <a href="https://faculty.cc.gatech.edu/~bozhu/">Bo Zhu</a>
+          </p>
+          <p class="venue">CVPR 2026</p>
+          <div class="links" aria-label="Project links">
+            <a href="https://arxiv.org/abs/2511.12898">Paper</a>
+            <a href="assets/fmf-paper.pdf">PDF</a>
+          </div>
+        </div>
+      </section>
+
+      <div class="chapter chapter-intro">
+        <section class="highlights" aria-label="Paper highlights">
+          <h2>Highlights</h2>
+          <div class="highlight-list">
+            <div class="highlight-item">
+              <span>01</span>
+              <p>First extension of MeanFlow to functional Hilbert space.</p>
+            </div>
+            <div class="highlight-item">
+              <span>02</span>
+              <p>First \(x_1\)-prediction formulation for MeanFlow.</p>
+            </div>
+            <div class="highlight-item">
+              <span>03</span>
+              <p>One-step SDF and image generation based on MeanFlow.</p>
+            </div>
+          </div>
+        </section>
+
+        <section class="abstract">
+          <h2>Abstract</h2>
+          <p>
+            We present Functional Mean Flow (FMF) as a one-step generative model
+            defined in infinite-dimensional Hilbert space. FMF extends the
+            one-step Mean Flow framework to functional domains by providing a
+            theoretical formulation for Functional Flow Matching and a practical
+            implementation for efficient training and sampling.
+          </p>
+          <p>
+            We also introduce an \(x_1\)-prediction variant that improves
+            stability over the original \(u\)-prediction form. The resulting
+            framework is a practical one-step Flow Matching method applicable to a
+            wide range of functional data generation tasks such as time series,
+            images, PDEs, and 3D geometry.
+          </p>
+        </section>
+
+        <section class="features">
+          <div class="section-head">
+            <h2>Features</h2>
+            <p>
+              FMF contributes both a functional-space extension of MeanFlow and a
+              new \(x_1\)-prediction formulation motivated by the instability we
+              observed in SDF generation.
+            </p>
+          </div>
+
+          <div class="feature-grid">
+            <article class="feature-card">
+              <span class="feature-kicker">First formulation</span>
+              <h3>\(x_1\)-prediction MeanFlow</h3>
+              <p>
+                FMF formulates \(x_1\)-prediction for MeanFlow. Instead of
+                predicting the average velocity \(\bar u_{t\to r}\) directly,
+                the network predicts the endpoint obtained by extrapolating the
+                mean velocity to \(t=1\):
+                \(\hat f_{1,t\to r}=(1-t)\bar u_{t\to r}+\mathrm{Id}_{\mathcal F}\).
+              </p>
+            </article>
+
+            <article class="feature-card">
+              <span class="feature-kicker">Why it matters</span>
+              <h3>Stable SDF generation</h3>
+              <p>
+                The \(x_1\)-prediction variant was introduced to address severe
+                instability in SDF generation, where \(u\)-prediction can collapse
+                to nearly constant fields. SDFs are functions, while valid
+                shapes concentrate on a structured, high-dimensional data
+                manifold inside that function space. Predicting the endpoint
+                keeps the target closer to this manifold and improves stability.
+                See the explicit \(u\)-prediction versus \(x_1\)-prediction comparison in the
+                <a href="#sdf-validation">2D SDF validation experiment</a>.
+              </p>
+            </article>
+
+            <article class="feature-card">
+              <span class="feature-kicker">Contemporaneous view</span>
+              <h3>Connection to JiT</h3>
+              <p>
+                When we first observed the stability gap, the mechanism was not
+                fully clear. A contemporaneous work,
+                <a href="https://arxiv.org/abs/2511.13720">JiT</a>, provides a
+                useful explanation through the manifold assumption: clean data
+                lies on a lower-dimensional manifold, while noisy or
+                velocity-like quantities occupy a much harder high-dimensional
+                space. This view supports why \(x_1\)-prediction can be more
+                stable than \(u\)-prediction for SDF functions.
+              </p>
+            </article>
+
+            <article class="feature-card">
+              <span class="feature-kicker">Priority</span>
+              <h3>Earlier than pMF</h3>
+              <p>
+                FMF was submitted to arXiv on November 17, 2025. The later
+                <a href="https://arxiv.org/abs/2601.22158">pixel MeanFlow
+                (pMF)</a> work was submitted on January 29, 2026 and also uses
+                an \(x\)-prediction target with a MeanFlow-style velocity loss.
+                FMF introduced the \(x_1\)-prediction MeanFlow formula more than
+                two months earlier.
+              </p>
+            </article>
+          </div>
+        </section>
+      </div>
+
+      <div class="chapter chapter-formulation">
+        <div class="chapter-label">Formulation</div>
+
+        <section class="method">
+        <div class="section-head">
+          <h2>\(u\)-prediction and \(x_1\)-prediction</h2>
+          <p>
+            The core schematic below is taken from the camera-ready figure. It
+            shows how FMF extends the \(x_1\)-prediction idea from Functional
+            Flow Matching to the two-time Functional Mean Flow setting.
+          </p>
+        </div>
+
+        <div class="figure-grid">
+          <figure>
+            <img
+              src="assets/functional_u_x1_2.png"
+              alt="Functional Flow Matching u-prediction and x1-prediction"
+            />
+            <figcaption>
+              Functional Flow Matching: \(u\)-prediction estimates \(u_t(f_t)\),
+              while \(x_1\)-prediction estimates \(\hat f_{1,t}(f_t)\).
+            </figcaption>
+          </figure>
+          <figure>
+            <img
+              src="assets/meanflow_u_x1_2.png"
+              alt="Functional Mean Flow u-prediction and x1-prediction"
+            />
+            <figcaption>
+              Functional Mean Flow: \(u\)-prediction estimates
+              \(\bar u_{t\to r}(f_t)\), while \(x_1\)-prediction estimates
+              \(\hat f_{1,t\to r}(f_t)\).
+            </figcaption>
+          </figure>
+        </div>
+        </section>
+
+        <section class="formulas">
+        <div class="section-head">
+          <h2>Formula Highlights</h2>
+          <p>
+            These are the two parameterizations emphasized in the paper source:
+            predicting mean velocity directly, or predicting the endpoint
+            induced by extrapolating that mean velocity to \(t=1\).
+          </p>
+        </div>
+
+        <div class="formula-grid">
+          <article class="formula-card">
+            <h3>\(u\)-prediction FMF</h3>
+            <p>The two-parameter flow and mean velocity are</p>
+            <div class="equation">
+              \[
+                \phi_{t\to r}=\phi_r\circ\phi_t^{-1}, \qquad
+                \bar{u}_{t\to r}
+                =
+                \frac{1}{r-t}
+                \left(\phi_{t\to r}-\mathrm{Id}_{\mathcal F}\right).
+              \]
+            </div>
+            <p>The mean velocity \(\bar u_{t\to r}\) satisfies the identity</p>
+            <div class="equation">
+              \[
+                \bar{u}_{t\to r}(g)
+                =
+                (r-t)
+                \left(
+                  \frac{\partial}{\partial t}\bar{u}_{t\to r}(g)
+                  +
+                  D\bar{u}_{t\to r}(g)[u_t(g)]
+                \right)
+                +u_t(g).
+              \]
+            </div>
+            <p>
+              Replacing \(u_t(g)\) with the conditional velocity
+              \(u_t^f(g)\) gives the learnable conditional loss:
+            </p>
+            <div class="equation">
+              \[
+                u_t^f(g)
+                =
+                \frac{f-(1-\sigma_{\min})g}
+                {1-(1-\sigma_{\min})t}.
+              \]
+              \[
+                \mathcal L_c^M(\theta)
+                =
+                \mathbb E_{t,r,g\sim\mu_t^f,f\sim\mu_1}
+                \left[
+                \left\|
+                (r-t)\operatorname{sg}
+                \left(
+                \frac{\partial}{\partial t}\bar u^\theta_{t\to r}(g)
+                +
+                D\bar u^\theta_{t\to r}(g)[u_t^f(g)]
+                \right)
+                +u_t^f(g)
+                -\bar u^\theta_{t\to r}(g)
+                \right\|_{\mathcal F}^2
+                \right].
+              \]
+            </div>
+            <p>One-step sampling uses</p>
+            <div class="equation">
+              \[
+                f_1=f_0+\bar{u}^{\theta}_{0\to 1}(f_0).
+              \]
+            </div>
+          </article>
+
+          <article class="formula-card accent">
+            <h3>\(x_1\)-prediction FMF</h3>
+            <p>The endpoint prediction is defined by</p>
+            <div class="equation">
+              \[
+                \hat{f}_{1,t\to r}
+                =
+                (1-t)\bar{u}_{t\to r}
+                +\mathrm{Id}_{\mathcal F}.
+              \]
+            </div>
+            <p>
+              The endpoint field \(\hat f_{1,t\to r}\) satisfies the identity
+            </p>
+            <div class="equation">
+              \[
+                \hat{f}_{1,t\to r}(g)
+                =
+                \frac{r-t}{1-t}
+                \left(
+                  (1-t)
+                  \frac{\partial}{\partial t}
+                  \hat{f}_{1,t\to r}(g)
+                  +
+                  D\hat{f}_{1,t\to r}(g)
+                  [\hat{f}_{1,t}(g)-g]
+                \right)
+                +
+                \hat{f}_{1,t}(g).
+              \]
+            </div>
+            <p>
+              Replacing \(\hat f_{1,t}(g)\) with its conditional counterpart
+              gives the learnable conditional loss:
+            </p>
+            <div class="equation">
+              \[
+                \hat{f}^{\,f}_{1,t}(g)
+                =
+                \frac{\sigma_{\min}}
+                {1-(1-\sigma_{\min})t}
+                (g-tf)+f,
+              \]
+              \[
+                \tilde{\mathcal L}_c^M(\theta)
+                =
+                \mathbb E_{t,r,g\sim\mu_t^f,f\sim\mu_1}
+                \left[
+                \left\|
+                \frac{r-t}{1-r}\operatorname{sg}
+                \left(
+                (1-t)\frac{\partial}{\partial t}
+                \hat f^\theta_{1,t\to r}(g)
+                +
+                D\hat f^\theta_{1,t\to r}(g)
+                [\hat f^f_{1,t}(g)-g]
+                \right)
+                +\hat f^f_{1,t}(g)
+                -\hat f^\theta_{1,t\to r}(g)
+                \right\|_{\mathcal F}^2
+                \right].
+              \]
+            </div>
+            <p>One-step sampling uses</p>
+            <div class="equation">
+              \[
+                f_1=\hat{f}^{\,\theta}_{1,0\to 1}(f_0).
+              \]
+            </div>
+          </article>
+        </div>
+        </section>
+      </div>
+
+      <div class="chapter chapter-tasks">
+        <div class="chapter-label">Tasks</div>
+
+        <section class="results">
+          <div class="section-head">
+            <h2>Task Overview</h2>
+            <p>
+              FMF is evaluated across functional domains. The sections below
+              highlight image generation, 3D SDF generation, and a 2D SDF
+              validation experiment.
+            </p>
+          </div>
+
+          <figure class="overview-figure">
+            <img
+              src="assets/illustration_new5.png"
+              alt="Functional Mean Flow teaser diagram from the paper"
+            />
+            <figcaption>
+              FMF learns a one-step transport in function space, generating
+              functional data such as images, PDE fields, time series, and 3D
+              geometry.
+            </figcaption>
+          </figure>
+        </section>
+
+        <section class="tasks">
+          <div class="task-section">
+            <article class="task-block">
+              <div class="task-copy">
+                <h2>1. Function-Based Image Generation</h2>
+                <p>
+                  Images are treated as continuous functions rather than fixed
+                  pixel grids. Following the Infty-Diff setting, the model
+                  observes a random \(25\%\) subset of pixels from
+                  \(256\times256\) images and performs one-step generation at
+                  arbitrary query coordinates.
+                </p>
+                <p>
+                  At inference, changing the query grid produces multiple output
+                  resolutions with the same trained model.
+                </p>
+              </div>
+              <figure>
+                <img
+                  src="assets/neural_operator2.png"
+                  alt="Neural operator model diagram for function-based image generation"
+                />
+                <figcaption>
+                  Model schematic: both input and output are continuous
+                  functions, so generation is defined over arbitrary pixel
+                  coordinates.
+                </figcaption>
+              </figure>
+            </article>
+
+            <figure class="wide-figure">
+              <img
+                src="assets/celeb_multi_res-1.png"
+                alt="Figure 2: multi-resolution CelebA-HQ image generation"
+              />
+              <figcaption>
+                Figure 2: the model is trained on random \(1/4\) pixel subsets
+                of \(256\times256\) CelebA-HQ images and performs one-step
+                generation at \(64\times64\), \(128\times128\),
+                \(256\times256\), \(512\times512\), and \(1024\times1024\).
+                <a href="assets/celeb_multi_res.pdf">PDF version</a>
+              </figcaption>
+            </figure>
+          </div>
+
+          <div class="task-section" id="sdf-3d">
+            <article class="task-block reverse">
+              <div class="task-copy">
+                <h2>2. SDF-Based 3D Shape Generation</h2>
+                <p>
+                  For 3D shape generation, each mesh is converted into a signed
+                  distance field. The model receives only 64 points sampled from
+                  the target surface and reconstructs the full SDF field in one
+                  step using \(x_1\)-prediction FMF.
+                </p>
+                <p>
+                  Training follows the Functional Diffusion representation:
+                  context points \(\{x_c^i\}_{i=1}^n\) carry input values
+                  \(\{v_c^i\}_{i=1}^n\), query points
+                  \(\{x_q^j\}_{j=1}^m\) receive predicted SDF values, and a
+                  dense \(128^3\) query grid is used before Marching Cubes.
+                </p>
+              </div>
+              <figure>
+                <img
+                  src="assets/functional_diffusion_picture7.png"
+                  alt="Functional Diffusion architecture for 3D SDF generation"
+                />
+                <figcaption>
+                  Functional Diffusion architecture used for 3D SDF generation:
+                  context functions interact with learnable functional vectors
+                  through cascaded cross- and self-attention, then query points
+                  are decoded into SDF values.
+                </figcaption>
+              </figure>
+            </article>
+
+            <figure class="wide-figure">
+              <img
+                src="assets/shape-1.png"
+                alt="3D shape generation results conditioned on 64 surface points"
+              />
+              <figcaption>
+                Shape reconstruction task: GT surfaces, 64 conditioning points,
+                and one-step FMF reconstructions.
+                <a href="assets/shape.pdf">PDF version</a>
+              </figcaption>
+            </figure>
+
+            <div class="code-section">
+              <div class="section-head">
+                <h2>3D SDF-Specific Implementation</h2>
+                <p>
+                  The SDF task keeps separate context and query representations
+                  of the same reference field. Gaussian-process-like noise is
+                  sampled on a coarse 3D grid and interpolated to both context
+                  and query points.
+                </p>
+              </div>
+              <pre><code class="language-python"># Training: x1-prediction FMF for 3D SDF fields.
+# xc, vc: context points and SDF values
+# xq, vq: query points and SDF values
+# cond: 64 observed surface points
+
+rg = torch.randn(B, 1, s, s, s)
+rc = interpolate(rg, xc)
+rq = interpolate(rg, xq)
+
+t, r = sample_t_r()
+coef = 1 - sigma_min
+
+g = (1 - coef * t) * rc + t * vc
+f1_f_c = sigma_min * rc + vc
+f1_f_q = sigma_min * rq + vq
+
+x1_partial = partial(x1, xc=xc, xq=xq, cond=cond)
+f1, df1dt = jvp(x1_partial, (g, t, r), (f1_f_c - g, 1 - t, 0))
+
+f1_tgt = (r - t) / (1 - r) * df1dt + f1_f_q
+error = f1 - stopgrad(f1_tgt)
+loss = metric(error)</code></pre>
+
+              <pre><code class="language-python"># Inference: query a dense 128^3 grid and reconstruct with Marching Cubes.
+
+rg = torch.randn(B, 1, s, s, s)
+rc = interpolate(rg, xc)
+vqg = x1(xc, rc, xqg, 0, 1, cond)</code></pre>
+            </div>
+          </div>
+
+          <div class="task-section" id="sdf-validation">
+            <div class="validation-note">
+              <h2>3. Validation on 2D MNIST SDFs</h2>
+              <p>
+                Before the full 3D ShapeNet reconstruction task, we validate
+                the stability issue on a controlled 2D MNIST experiment. Digits
+                are converted into signed distance fields and trained with the
+                same Functional Diffusion-style representation. Under this SDF
+                setup, \(u\)-prediction collapses, while \(x_1\)-prediction
+                preserves valid SDF structure and recovers digits from
+                zero-level sets.
+              </p>
+            </div>
+
+            <div class="sdf-gallery">
+              <figure>
+                <img
+                  src="assets/mnist_u_predict.png"
+                  alt="MNIST SDF u-prediction failure"
+                />
+                <figcaption>
+                  \(u\)-prediction FMF can collapse on SDF training.
+                </figcaption>
+              </figure>
+              <figure>
+                <img
+                  src="assets/mnist_x1_predict_sdf.png"
+                  alt="MNIST SDF x1-prediction results"
+                />
+                <figcaption>
+                  \(x_1\)-prediction FMF produces valid SDF fields.
+                </figcaption>
+              </figure>
+              <figure>
+                <img
+                  src="assets/mnist_x1_predict_bw.png"
+                  alt="MNIST binary digits extracted from x1-prediction SDF"
+                />
+                <figcaption>
+                  Binary digits extracted from the zero-level sets.
+                </figcaption>
+              </figure>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <section class="paper">
+        <div class="section-head">
+          <h2>Paper</h2>
+          <p>
+            The camera-ready PDF is embedded below for reading directly on the
+            project page.
+          </p>
+        </div>
+        <object
+          class="pdf-viewer"
+          data="assets/fmf-paper.pdf"
+          type="application/pdf"
+        >
+          <iframe
+            class="pdf-viewer"
+            src="assets/fmf-paper.pdf"
+            title="Functional Mean Flow in Hilbert Space PDF"
+          ></iframe>
+        </object>
+      </section>
+
+      <section class="bibtex">
+        <h2>BibTeX</h2>
+        <pre><code>@inproceedings{li2026functional,
+  title   = {Functional Mean Flow in Hilbert Space},
+  author  = {Li, Zhiqi and Sun, Yuchen and Turk, Greg and Zhu, Bo},
+  booktitle = {Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition},
+  year    = {2026}
+}</code></pre>
+      </section>
+    </main>
+  </body>
+</html>
