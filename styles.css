@@ -171,8 +171,19 @@ section {
 .paper,
 .abstract,
 .features,
+.teaser,
 .bibtex {
   background: transparent;
+}
+
+.teaser {
+  padding-top: 34px;
+  padding-bottom: 34px;
+}
+
+.teaser-figure {
+  width: min(980px, 100%);
+  margin-inline: auto;
 }
 
 .highlights {
@@ -226,6 +237,7 @@ img {
 }
 
 .results figure,
+.teaser figure,
 .figure-grid figure,
 .task-block figure,
 .sdf-gallery figure,
@@ -237,6 +249,7 @@ img {
 }
 
 .results img,
+.teaser img,
 .figure-grid img,
 .task-block img,
 .sdf-gallery img,
